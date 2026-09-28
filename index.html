@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fábrica de Quadrinhos</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --tinta: #1f1b2e;
+    --roxo: #7b4dff;
+    --rosa: #ff5fa2;
+    --amarelo: #ffd23f;
+    --fundo: #fdf4ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--tinta);
+    background: var(--fundo);
+    background-image: radial-gradient(#e9d9ff 1.5px, transparent 1.5px);
+    background-size: 18px 18px;
+    min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 20px; background: white; border-bottom: 4px solid var(--tinta);
+    position: sticky; top: 0; z-index: 20;
+  }
+  header h1 { font-family: 'Bangers', cursive; font-size: 2rem; margin: 0; letter-spacing: 2px; color: var(--rosa); -webkit-text-stroke: 1px var(--tinta); }
+  .espaco { flex: 1; }
+  .btn {
+    font-family: inherit; font-weight: 600; font-size: 1rem; cursor: pointer;
+    border: 3px solid var(--tinta); border-radius: 12px; padding: 8px 14px;
+    background: white; box-shadow: 3px 3px 0 var(--tinta); transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--tinta); }
+  .btn.roxo { background: var(--roxo); color: white; }
+  .btn.rosa { background: var(--rosa); color: white; }
+  .btn.amarelo { background: var(--amarelo); }
+  .btn.ativo { background: var(--amarelo); }
+  .grupo { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .grupo > span { font-weight: 600; font-size: .9rem; }
+
+  main { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; align-items: start; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } aside { order: 2; } }
+
+  aside {
+    background: white; border: 4px solid var(--tinta); border-radius: 18px; padding: 14px;
+    box-shadow: 5px 5px 0 var(--tinta); position: sticky; top: 90px;
+    max-height: calc(100vh - 110px); overflow: auto;
+  }
+  .abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+  .abas .btn { padding: 8px 4px; font-size: .9rem; }
+  .painel-aba h3 { margin: 12px 0 6px; font-size: 1rem; }
+  .grade-emoji { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .grade-emoji button {
+    font-size: 1.7rem; background: #faf5ff; border: 2px solid transparent; border-radius: 10px; cursor: pointer; padding: 4px 0;
+  }
+  .grade-emoji button:hover { border-color: var(--roxo); transform: scale(1.1); }
+  .grade-cenas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cena-btn {
+    height: 64px; border-radius: 12px; border: 3px solid var(--tinta); cursor: pointer; position: relative;
+    font-family: inherit; font-weight: 700; font-size: .85rem; color: var(--tinta); overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px;
+  }
+  .cena-btn span { background: rgba(255,255,255,.85); border-radius: 8px; padding: 0 6px; }
+  .grade-baloes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .grade-baloes .btn { font-size: .95rem; }
+
+  .editar { margin-top: 16px; border-top: 3px dashed #d9c9ff; padding-top: 12px; }
+  .editar h3 { margin: 0 0 8px; }
+  .editar .grupo { margin-bottom: 8px; }
+  .editar .btn { padding: 6px 10px; font-size: .95rem; }
+  .dica { font-size: .85rem; opacity: .7; margin: 6px 0 0; }
+
+  /* ===== QUADRINHO ===== */
+  .area { display: flex; justify-content: center; }
+  #quadrinho {
+    background: white; border: 5px solid var(--tinta); padding: 18px; width: 100%; max-width: 1000px;
+    box-shadow: 8px 8px 0 var(--tinta);
+  }
+  #titulo {
+    font-family: 'Bangers', cursive; font-size: clamp(1.8rem, 4vw, 3rem); text-align: center; letter-spacing: 3px;
+    margin: 0 0 14px; outline: none; color: var(--roxo); -webkit-text-stroke: 1.5px var(--tinta);
+  }
+  #titulo:empty::before { content: 'Clique para dar um título!'; opacity: .4; }
+  #autor { text-align: right; font-family: 'Comic Neue', cursive; font-weight: 700; margin-top: 10px; outline: none; }
+  #autor:empty::before { content: 'por: (seu nome)'; opacity: .4; }
+  .quadros { display: grid; gap: 14px; }
+  .quadros.l1 { grid-template-columns: 1fr; }
+  .quadros.l2 { grid-template-columns: repeat(2, 1fr); }
+  .quadros.l3 { grid-template-columns: repeat(3, 1fr); }
+  .quadros.l4 { grid-template-columns: repeat(2, 1fr); }
+  .quadros.l6 { grid-template-columns: repeat(3, 1fr); }
+
+  .quadro {
+    position: relative; aspect-ratio: 1 / 1; border: 4px solid var(--tinta); overflow: hidden;
+    container-type: inline-size; cursor: pointer; touch-action: none;
+  }
+  .quadros.l1 .quadro { aspect-ratio: 16 / 9; }
+  .quadro.selecionado { outline: 5px solid var(--rosa); outline-offset: 3px; }
+  .quadro .num {
+    position: absolute; top: 2cqw; left: 2cqw; background: var(--tinta); color: white; font-weight: 700;
+    border-radius: 50%; width: 7cqw; height: 7cqw; display: grid; place-items: center; font-size: 4cqw; z-index: 50;
+  }
+  .decor { position: absolute; transform: translate(-50%, -50%); pointer-events: none; line-height: 1; }
+
+  .item { position: absolute; transform: translate(-50%, -50%); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .item.arrastando { cursor: grabbing; }
+  .item.selecionado { outline: 3px dashed var(--rosa); outline-offset: 4px; }
+  .figurinha { line-height: 1; }
+  .figurinha .inner { display: inline-block; }
+
+  .balao {
+    background: white; border: .8cqw solid var(--tinta); color: var(--tinta);
+    font-family: 'Comic Neue', cursive; font-weight: 700; text-align: center; line-height: 1.15;
+    padding: 3cqw 4cqw; border-radius: 50%;
+  }
+  .balao .txt { outline: none; cursor: text; min-height: 1em; word-wrap: break-word; }
+  .balao .txt:empty::before { content: 'Escreva aqui...'; opacity: .4; }
+  /* rabinho do balão de fala */
+  .balao.fala::before, .balao.fala::after { content: ''; position: absolute; border-style: solid; }
+  .balao.fala::before { bottom: -5.5cqw; left: 22%; border-width: 5.5cqw 2.5cqw 0 2.5cqw; border-color: var(--tinta) transparent transparent transparent; }
+  .balao.fala::after { bottom: -3.8cqw; left: calc(22% + .9cqw); border-width: 4.2cqw 1.6cqw 0 1.6cqw; border-color: white transparent transparent transparent; }
+  .balao.fala.dir::before { left: auto; right: 22%; }
+  .balao.fala.dir::after { left: auto; right: calc(22% + .9cqw); }
+  /* pensamento */
+  .balao.pensa { border-radius: 50%; border-style: dotted; background: #f4f0ff; }
+  .balao.pensa::before, .balao.pensa::after { content: ''; position: absolute; background: #f4f0ff; border: .6cqw solid var(--tinta); border-radius: 50%; }
+  .balao.pensa::before { width: 4cqw; height: 4cqw; bottom: -5cqw; left: 25%; }
+  .balao.pensa::after { width: 2.4cqw; height: 2.4cqw; bottom: -8.5cqw; left: 20%; }
+  .balao.pensa.dir::before { left: auto; right: 25%; }
+  .balao.pensa.dir::after { left: auto; right: 20%; }
+  /* grito */
+  .balao.grito {
+    background: var(--amarelo); border-radius: 4cqw; text-transform: uppercase; font-family: 'Bangers', cursive;
+    letter-spacing: .3cqw; box-shadow: 1.2cqw 1.2cqw 0 var(--rosa);
+  }
+  /* narração */
+  .balao.narra { background: #ffeeb0; border-radius: 1cqw; text-align: left; padding: 2cqw 3cqw; font-weight: 400; font-style: italic; }
+
+  .alca {
+    display: none; position: absolute; top: -4.5cqw; right: -4.5cqw; width: 7cqw; height: 7cqw;
+    background: var(--rosa); color: white; border-radius: 50%; border: 2px solid var(--tinta);
+    place-items: center; font-size: 4cqw; cursor: move; font-family: 'Fredoka', sans-serif; font-style: normal;
+  }
+  .item.balao.selecionado .alca { display: grid; }
+
+  .capturando .alca, .capturando .num { display: none !important; }
+  .capturando .item.selecionado, .capturando .quadro.selecionado { outline: none; }
+  .capturando .txt:empty::before, .capturando #titulo:empty::before, .capturando #autor:empty::before { content: ''; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--tinta); color: white;
+    padding: 12px 20px; border-radius: 14px; font-weight: 600; z-index: 100; animation: aparece .3s;
+  }
+  @keyframes aparece { from { opacity: 0; transform: translate(-50%, 20px); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💥 Fábrica de Quadrinhos</h1>
+  <div class="grupo" id="layouts"><span>Quadros:</span></div>
+  <div class="espaco"></div>
+  <button class="btn" onclick="novo()">📄 Novo</button>
+  <button class="btn roxo" onclick="baixar()">📸 Salvar imagem</button>
+</header>
+
+<main>
+  <aside>
+    <div class="abas">
+      <button class="btn ativo" data-aba="cenas">🏞️ Cenário</button>
+      <button class="btn" data-aba="figuras">🦄 Figuras</button>
+      <button class="btn" data-aba="baloes">💬 Balões</button>
+    </div>
+
+    <div class="painel-aba" id="aba-cenas">
+      <p class="dica" style="margin-top:0">Escolha um quadro e depois um cenário 👇</p>
+      <div class="grade-cenas" id="grade-cenas"></div>
+    </div>
+
+    <div class="painel-aba hidden" id="aba-figuras"></div>
+
+    <div class="painel-aba hidden" id="aba-baloes">
+      <p class="dica" style="margin-top:0">Toque para colocar um balão no quadro escolhido 👇</p>
+      <div class="grade-baloes">
+        <button class="btn" onclick="addBalao('fala')">💬 Fala</button>
+        <button class="btn" onclick="addBalao('pensa')">💭 Pensamento</button>
+        <button class="btn amarelo" onclick="addBalao('grito')">💥 Grito!</button>
+        <button class="btn" onclick="addBalao('narra')">📜 Narração</button>
+      </div>
+    </div>
+
+    <div class="editar hidden" id="editar">
+      <h3 id="editar-titulo">✏️ Item escolhido</h3>
+      <div class="grupo">
+        <button class="btn" onclick="mudar('maior')">➕ Maior</button>
+        <button class="btn" onclick="mudar('menor')">➖ Menor</button>
+      </div>
+      <div class="grupo">
+        <button class="btn" onclick="mudar('virar')" id="btn-virar">↔️ Virar</button>
+        <button class="btn" onclick="mudar('girar')" id="btn-girar">🔄 Girar</button>
+        <button class="btn" onclick="mudar('frente')">⬆️ Na frente</button>
+      </div>
+      <div class="grupo hidden" id="opcoes-balao">
+        <button class="btn" onclick="mudar('rabinho')">👈👉 Rabinho</button>
+        <button class="btn" onclick="mudar('tipo')">🔁 Tipo</button>
+      </div>
+      <div class="grupo">
+        <button class="btn" onclick="mudar('copiar')">📋 Copiar</button>
+        <button class="btn rosa" onclick="mudar('apagar')">🗑️ Apagar</button>
+      </div>
+      <p class="dica">Arraste para mover. Nos balões, use a bolinha ✥ para arrastar.</p>
+    </div>
+  </aside>
+
+  <div class="area">
+    <div id="quadrinho">
+      <h2 id="titulo" contenteditable="true" spellcheck="false"></h2>
+      <div class="quadros" id="quadros"></div>
+      <div id="autor" contenteditable="true" spellcheck="false"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ====== CENÁRIOS ======
+const CENAS = {
+  branco:   { nome: 'Branco',      bg: '#ffffff', decor: [] },
+  ceu:      { nome: 'Céu',         bg: 'linear-gradient(#8fd3ff, #d9f2ff 70%, #9be58f 70%, #6cc36a)', decor: [['☁️', 20, 18, 14], ['☁️', 75, 12, 10], ['☀️', 88, 14, 12]] },
+  praia:    { nome: 'Praia',       bg: 'linear-gradient(#7fd6ff 0%, #bfeaff 45%, #3db4e6 45%, #3db4e6 62%, #ffe29a 62%)', decor: [['☀️', 15, 14, 14], ['🌴', 88, 55, 22], ['🐚', 30, 88, 7]] },
+  escola:   { nome: 'Escola',      bg: 'linear-gradient(#fff3d6 0 12%, #2f6b4f 12% 48%, #fff3d6 48% 75%, #c98b52 75%)', decor: [['📚', 85, 68, 10], ['🕒', 88, 8, 8]] },
+  quarto:   { nome: 'Quarto',      bg: 'linear-gradient(#ffd6ea 0 70%, #c9a0dc 70%)', decor: [['🪟', 20, 28, 20], ['🛏️', 78, 70, 24], ['🧸', 45, 78, 9]] },
+  floresta: { nome: 'Floresta',    bg: 'linear-gradient(#bfe9c9, #e6f7e6 60%, #6fbf73 60%)', decor: [['🌲', 12, 55, 24], ['🌳', 85, 55, 26], ['🍄', 55, 82, 8], ['🌼', 30, 88, 6]] },
+  espaco:   { nome: 'Espaço',      bg: 'radial-gradient(circle at 20% 30%, #fff 0.4%, transparent 0.8%), radial-gradient(circle at 70% 20%, #fff 0.4%, transparent 0.8%), radial-gradient(circle at 50% 70%, #fff 0.3%, transparent 0.7%), radial-gradient(circle at 85% 60%, #fff 0.4%, transparent 0.8%), linear-gradient(#1a1040, #3b1f7a)', decor: [['🪐', 80, 22, 16], ['🌍', 15, 80, 14], ['⭐', 40, 15, 5]] },
+  cidade:   { nome: 'Cidade à noite', bg: 'linear-gradient(#26235c, #5a3f9e 65%, #2b2b3a 65%)', decor: [['🌙', 85, 15, 12], ['🏢', 15, 55, 26], ['🏙️', 60, 52, 28]] },
+  mar:      { nome: 'Fundo do mar', bg: 'linear-gradient(#5fd0ff, #1b75c9)', decor: [['🐠', 25, 30, 10], ['🫧', 70, 20, 7], ['🪸', 80, 85, 18], ['🌿', 12, 85, 14]] },
+  neve:     { nome: 'Neve',        bg: 'linear-gradient(#cfe7ff, #eef6ff 65%, #ffffff 65%)', decor: [['❄️', 20, 15, 6], ['❄️', 60, 25, 5], ['⛄', 82, 68, 20], ['🌲', 12, 60, 18]] },
+  arcoiris: { nome: 'Arco-íris',   bg: 'linear-gradient(135deg, #ffb3c7, #ffe0a3, #fff7a8, #b8f5c2, #b3dcff, #d7b8ff)', decor: [['🌈', 50, 25, 26]] },
+  loja:     { nome: 'Loja de beleza', bg: 'linear-gradient(#ffe6f1 0 55%, #ffb8d6 55% 58%, #fff 58% 80%, #f2c6dc 80%)', decor: [['🧴', 20, 48, 9], ['💄', 35, 48, 8], ['🪞', 80, 35, 18], ['🎀', 50, 12, 8]] },
+  boom:     { nome: 'Pow!',        bg: 'repeating-conic-gradient(from 0deg at 50% 50%, #ffd23f 0 10deg, #ff8a3d 10deg 20deg)', decor: [] },
+};
+
+const FIGURAS = {
+  'Pessoas': ['👧', '👦', '👩', '👨', '👵', '👴', '👶', '👸', '🧚‍♀️', '🧜‍♀️', '🦸‍♀️', '🦹‍♀️', '🧙‍♀️', '👩‍🚀', '👩‍🍳', '👩‍🎤', '💃', '🙋‍♀️', '🤷‍♀️', '🙆‍♀️', '👩‍🏫', '🧑‍🎨', '👯‍♀️', '🧍‍♀️'],
+  'Caras': ['😀', '😂', '🥰', '😍', '😎', '🤩', '😱', '😭', '😡', '🤔', '😴', '🤢', '🥳', '😇', '🤪', '😏', '😳', '🙄'],
+  'Animais': ['🐱', '🐶', '🐰', '🦄', '🐼', '🦊', '🐸', '🐧', '🐹', '🐨', '🦁', '🐯', '🐷', '🐮', '🐴', '🦋', '🐞', '🐢', '🐠', '🐬', '🐙', '🦖', '🐉', '🦜'],
+  'Coisas': ['🎀', '👑', '🧴', '💄', '💅', '👗', '👠', '👜', '🎁', '🍰', '🍕', '🍦', '🍩', '🍓', '📚', '✏️', '⚽', '🎸', '🎨', '📱', '🚀', '🚗', '🏠', '🏰', '🌳', '🌸', '🌈', '☁️', '🌙', '⭐', '☀️', '🪄'],
+  'Efeitos': ['💥', '💢', '💤', '❗', '❓', '✨', '💦', '💨', '🎵', '💕', '💔', '🔥', '⚡', '💫', '👀', '💡'],
+};
+
+const TIPOS_BALAO = ['fala', 'pensa', 'grito', 'narra'];
+const LAYOUTS = [1, 2, 3, 4, 6];
+const CHAVE = 'fabrica-quadrinhos-v1';
+
+// ====== ESTADO ======
+function quadroVazio() { return { cena: 'ceu', itens: [] }; }
+function novoEstado() {
+  return { titulo: '', autor: '', layout: 3, quadros: [quadroVazio(), quadroVazio(), quadroVazio()] };
+}
+let estado = carregar() || novoEstado();
+let sel = { quadro: 0, item: null };
+let proximoId = Date.now();
+
+function carregar() {
+  try { return JSON.parse(localStorage.getItem(CHAVE)); } catch { return null; }
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch {}
+}
+
+const $ = id => document.getElementById(id);
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+// ====== BARRA LATERAL ======
+function montarLateral() {
+  LAYOUTS.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'btn'; b.dataset.layout = n; b.textContent = n;
+    b.onclick = () => mudarLayout(n);
+    $('layouts').appendChild(b);
+  });
+
+  Object.entries(CENAS).forEach(([id, c]) => {
+    const b = document.createElement('button');
+    b.className = 'cena-btn'; b.style.background = c.bg;
+    b.innerHTML = `<span>${c.nome}</span>`;
+    b.onclick = () => { estado.quadros[sel.quadro].cena = id; salvar(); desenhar(); };
+    $('grade-cenas').appendChild(b);
+  });
+
+  Object.entries(FIGURAS).forEach(([cat, lista]) => {
+    const h = document.createElement('h3'); h.textContent = cat;
+    const g = document.createElement('div'); g.className = 'grade-emoji';
+    lista.forEach(e => {
+      const b = document.createElement('button');
+      b.textContent = e; b.onclick = () => addFigura(e);
+      g.appendChild(b);
+    });
+    $('aba-figuras').append(h, g);
+  });
+
+  document.querySelectorAll('.abas .btn').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.abas .btn').forEach(x => x.classList.toggle('ativo', x === b));
+      document.querySelectorAll('.painel-aba').forEach(p => p.classList.toggle('hidden', p.id !== 'aba-' + b.dataset.aba));
+    };
+  });
+
+  $('titulo').oninput = () => { estado.titulo = $('titulo').innerText.trim(); salvar(); };
+  $('autor').oninput = () => { estado.autor = $('autor').innerText.trim(); salvar(); };
+}
+
+// ====== DESENHAR ======
+function desenhar() {
+  document.querySelectorAll('#layouts .btn').forEach(b => b.classList.toggle('ativo', Number(b.dataset.layout) === estado.layout));
+  if (document.activeElement !== $('titulo')) $('titulo').textContent = estado.titulo;
+  if (document.activeElement !== $('autor')) $('autor').textContent = estado.autor;
+
+  const box = $('quadros');
+  box.className = 'quadros l' + estado.layout;
+  box.innerHTML = '';
+  estado.quadros.forEach((q, qi) => {
+    const el = document.createElement('div');
+    el.className = 'quadro' + (qi === sel.quadro ? ' selecionado' : '');
+    el.dataset.q = qi;
+    const cena = CENAS[q.cena] || CENAS.branco;
+    el.style.background = cena.bg;
+    el.innerHTML = `<div class="num">${qi + 1}</div>` +
+      cena.decor.map(([e, x, y, s]) => `<span class="decor" style="left:${x}%;top:${y}%;font-size:${s}cqw">${e}</span>`).join('');
+    el.addEventListener('pointerdown', ev => {
+      if (ev.target === el || ev.target.classList.contains('decor') || ev.target.classList.contains('num')) {
+        selecionar(qi, null);
+      }
+    });
+    q.itens.forEach(it => el.appendChild(criarItem(it, qi)));
+    box.appendChild(el);
+  });
+  atualizarEditor();
+}
+
+function criarItem(it, qi) {
+  const el = document.createElement('div');
+  el.dataset.id = it.id;
+  if (it.tipo === 'figura') {
+    el.className = 'item figurinha';
+    el.innerHTML = `<span class="inner">${it.emoji}</span>`;
+  } else {
+    el.className = `item balao ${it.estilo}${it.dir ? ' dir' : ''}`;
+    const txt = document.createElement('div');
+    txt.className = 'txt'; txt.contentEditable = 'true'; txt.spellcheck = false;
+    txt.textContent = it.texto || '';
+    txt.oninput = () => { it.texto = txt.innerText; salvar(); };
+    const alca = document.createElement('div');
+    alca.className = 'alca'; alca.textContent = '✥';
+    el.append(txt, alca);
+  }
+  if (sel.item === it.id) el.classList.add('selecionado');
+  aplicarEstilo(el, it);
+  el.addEventListener('pointerdown', ev => iniciarArraste(ev, el, it, qi));
+  return el;
+}
+
+function aplicarEstilo(el, it) {
+  el.style.left = it.x + '%';
+  el.style.top = it.y + '%';
+  if (it.tipo === 'figura') {
+    el.style.fontSize = it.tam + 'cqw';
+    el.firstChild.style.transform = `scaleX(${it.virar ? -1 : 1}) rotate(${it.giro || 0}deg)`;
+  } else {
+    el.style.width = it.tam + 'cqw';
+    el.style.fontSize = (it.tam * 0.14) + 'cqw';
+    el.style.transform = `translate(-50%, -50%) rotate(${it.giro || 0}deg)`;
+  }
+}
+
+// ====== SELEÇÃO ======
+function selecionar(qi, id) {
+  const mudouQuadro = qi !== sel.quadro;
+  sel = { quadro: qi, item: id };
+  if (mudouQuadro) {
+    document.querySelectorAll('.quadro').forEach(q => q.classList.toggle('selecionado', Number(q.dataset.q) === qi));
+  }
+  document.querySelectorAll('.item').forEach(i => i.classList.toggle('selecionado', i.dataset.id == id));
+  if (id == null && document.activeElement?.classList.contains('txt')) document.activeElement.blur();
+  atualizarEditor();
+}
+
+function itemSelecionado() {
+  const q = estado.quadros[sel.quadro];
+  return q && q.itens.find(i => i.id === sel.item);
+}
+
+function atualizarEditor() {
+  const it = itemSelecionado();
+  $('editar').classList.toggle('hidden', !it);
+  if (!it) return;
+  const balao = it.tipo === 'balao';
+  $('editar-titulo').textContent = balao ? '✏️ Balão escolhido' : `✏️ ${it.emoji} escolhido`;
+  $('opcoes-balao').classList.toggle('hidden', !balao);
+  $('btn-virar').classList.toggle('hidden', balao);
+}
+
+// ====== ARRASTAR ======
+function iniciarArraste(ev, el, it, qi) {
+  const naAlca = ev.target.classList.contains('alca');
+  const noTexto = ev.target.classList.contains('txt');
+  // Balão já escolhido: tocar no texto é para escrever, não arrastar
+  if (noTexto && sel.item === it.id && !naAlca) return;
+
+  ev.preventDefault();
+  ev.stopPropagation();
+  selecionar(qi, it.id);
+
+  const quadroEl = el.parentElement;
+  const r = quadroEl.getBoundingClientRect();
+  const inicio = { x: ev.clientX, y: ev.clientY, ix: it.x, iy: it.y };
+  let moveu = false;
+  el.setPointerCapture(ev.pointerId);
+  el.classList.add('arrastando');
+
+  const mover = e => {
+    const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
+    if (!moveu && Math.hypot(dx, dy) < 4) return;
+    moveu = true;
+    it.x = Math.min(100, Math.max(0, inicio.ix + dx / r.width * 100));
+    it.y = Math.min(100, Math.max(0, inicio.iy + dy / r.height * 100));
+    aplicarEstilo(el, it);
+  };
+  const soltar = () => {
+    el.removeEventListener('pointermove', mover);
+    el.removeEventListener('pointerup', soltar);
+    el.removeEventListener('pointercancel', soltar);
+    el.classList.remove('arrastando');
+    salvar();
+    if (!moveu && it.tipo === 'balao') focarTexto(el.querySelector('.txt'));
+  };
+  el.addEventListener('pointermove', mover);
+  el.addEventListener('pointerup', soltar);
+  el.addEventListener('pointercancel', soltar);
+}
+
+function focarTexto(txt) {
+  txt.focus();
+  const range = document.createRange();
+  range.selectNodeContents(txt); range.collapse(false);
+  const s = window.getSelection(); s.removeAllRanges(); s.addRange(range);
+}
+
+// ====== ADICIONAR / MUDAR ======
+function addFigura(emoji) {
+  const it = { id: ++proximoId, tipo: 'figura', emoji, x: 30 + Math.random() * 40, y: 50 + Math.random() * 25, tam: 22, virar: false, giro: 0 };
+  estado.quadros[sel.quadro].itens.push(it);
+  sel.item = it.id; salvar(); desenhar();
+}
+
+function addBalao(estilo) {
+  const it = { id: ++proximoId, tipo: 'balao', estilo, texto: '', x: 50, y: estilo === 'narra' ? 12 : 25, tam: estilo === 'narra' ? 60 : 45, dir: false, giro: estilo === 'grito' ? -4 : 0 };
+  estado.quadros[sel.quadro].itens.push(it);
+  sel.item = it.id; salvar(); desenhar();
+  const el = document.querySelector(`.item[data-id="${it.id}"] .txt`);
+  if (el) focarTexto(el);
+}
+
+function mudar(acao) {
+  const it = itemSelecionado();
+  if (!it) return;
+  const itens = estado.quadros[sel.quadro].itens;
+  switch (acao) {
+    case 'maior': it.tam = Math.min(it.tipo === 'balao' ? 95 : 90, it.tam * 1.2); break;
+    case 'menor': it.tam = Math.max(6, it.tam / 1.2); break;
+    case 'virar': it.virar = !it.virar; break;
+    case 'girar': it.giro = ((it.giro || 0) + 15) % 360; break;
+    case 'rabinho': it.dir = !it.dir; break;
+    case 'tipo': it.estilo = TIPOS_BALAO[(TIPOS_BALAO.indexOf(it.estilo) + 1) % TIPOS_BALAO.length]; break;
+    case 'frente': itens.splice(itens.indexOf(it), 1); itens.push(it); break;
+    case 'copiar': {
+      const c = { ...it, id: ++proximoId, x: Math.min(100, it.x + 8), y: Math.min(100, it.y + 8) };
+      itens.push(c); sel.item = c.id; break;
+    }
+    case 'apagar': itens.splice(itens.indexOf(it), 1); sel.item = null; break;
+  }
+  salvar(); desenhar();
+}
+
+function mudarLayout(n) {
+  const temConteudo = estado.quadros.slice(n).some(q => q.itens.length);
+  if (temConteudo && !confirm('Alguns quadros vão sumir. Tudo bem?')) return;
+  while (estado.quadros.length < n) estado.quadros.push(quadroVazio());
+  estado.quadros = estado.quadros.slice(0, n);
+  estado.layout = n;
+  sel = { quadro: Math.min(sel.quadro, n - 1), item: null };
+  salvar(); desenhar();
+}
+
+function novo() {
+  if (!confirm('Começar um quadrinho novo? O atual será apagado.')) return;
+  estado = novoEstado(); sel = { quadro: 0, item: null };
+  salvar(); desenhar();
+}
+
+async function baixar() {
+  if (!window.html2canvas) { toast('Precisa de internet para salvar a imagem 😕'); return; }
+  document.activeElement?.blur();
+  const q = $('quadrinho');
+  q.classList.add('capturando');
+  try {
+    const canvas = await html2canvas(q, { backgroundColor: '#ffffff', scale: 2 });
+    const a = document.createElement('a');
+    a.download = (estado.titulo || 'meu-quadrinho').replace(/[^\wÀ-ſ -]/g, '') + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('Imagem salva! 🎉');
+  } catch (e) {
+    toast('Ops, não deu para salvar 😕');
+  } finally {
+    q.classList.remove('capturando');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  const editando = document.activeElement?.isContentEditable;
+  if (!editando && (e.key === 'Delete' || e.key === 'Backspace') && sel.item) { e.preventDefault(); mudar('apagar'); }
+  if (e.key === 'Escape') selecionar(sel.quadro, null);
+});
+
+montarLateral();
+desenhar();
+</script>
+<style>.hidden { display: none !important; }</style>
+</body>
+</html>
